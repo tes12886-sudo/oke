@@ -36,7 +36,7 @@ VER_DATA = {
     "should_check_ab_load": False,
     "force_refresh_restype": "optionalavatarres",
     "remote_version": "1.130.22",
-    "server_url": "https://iuiu.nesayu.my.id/",
+    "server_url": "https://bahlil.embege-enak-loh.my.id/",
     "is_review_server": False,
     "use_login_optional_download": True,
     "use_background_download": False,
@@ -91,7 +91,6 @@ def make_octet_response(text: str, status_code: int = 400) -> Response:
     )
 
 
-# UI Dashboard Modern & Clean
 @app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/DASHBOARD", response_class=HTMLResponse)
 async def dashboard_view():
@@ -457,14 +456,22 @@ async def handle_major_login(request: Request):
 
         if len(ciphertext) > 0 and len(ciphertext) % 16 == 0:
             decrypted = aes_decrypt(ciphertext)
-            decoded_dict, typedef = blackboxprotobuf.protobuf_to_json(decrypted)
-
-            if isinstance(decoded_dict, str):
-                decoded_dict = json.loads(decoded_dict)
+            
+            # Decode message langsung agar tipe native (int/bytes/str) tidak korup menjadi string
+            decoded_dict, typedef = blackboxprotobuf.decode_message(decrypted)
 
             if ACTIVE_CONFIG.get("open_id") and ACTIVE_CONFIG.get("access_token"):
-                decoded_dict["22"] = str(ACTIVE_CONFIG["open_id"])
-                decoded_dict["29"] = str(ACTIVE_CONFIG["access_token"])
+                raw_oid = ACTIVE_CONFIG["open_id"]
+                if "22" in typedef and typedef["22"].get("type") in ["int", "uint", "varint"]:
+                    decoded_dict["22"] = int(raw_oid)
+                else:
+                    decoded_dict["22"] = str(raw_oid)
+
+                raw_tok = ACTIVE_CONFIG["access_token"]
+                if "29" in typedef and typedef["29"].get("type") == "bytes":
+                    decoded_dict["29"] = raw_tok.encode("utf-8")
+                else:
+                    decoded_dict["29"] = str(raw_tok)
 
             re_encoded_proto = blackboxprotobuf.encode_message(decoded_dict, typedef)
             re_encrypted = aes_encrypt(re_encoded_proto)
