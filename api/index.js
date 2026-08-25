@@ -91,86 +91,287 @@ def make_octet_response(text: str, status_code: int = 400) -> Response:
     )
 
 
+# UI Dashboard Modern & Clean
 @app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/DASHBOARD", response_class=HTMLResponse)
 async def dashboard_view():
-    current_oid = ACTIVE_CONFIG.get("open_id") or "Belum diatur"
-    current_tok = (
-        (ACTIVE_CONFIG["access_token"][:15] + "...")
-        if ACTIVE_CONFIG.get("access_token")
-        else "Belum diatur"
-    )
+    current_oid = ACTIVE_CONFIG.get("open_id") or "None"
+    current_tok = ACTIVE_CONFIG.get("access_token") or "None"
+    is_active = bool(ACTIVE_CONFIG.get("open_id") and ACTIVE_CONFIG.get("access_token"))
 
     html_content = f"""<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MajorLogin Control Dashboard</title>
+    <title>MajorLogin Control Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
-        body {{ background: #0b0f19; color: #f1f5f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }}
-        .card {{ background: #111827; width: 100%; max-width: 520px; padding: 32px; border-radius: 16px; border: 1px solid #1f2937; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }}
-        h1 {{ font-size: 1.4rem; font-weight: 700; color: #38bdf8; margin-bottom: 6px; }}
-        p.subtitle {{ font-size: 0.85rem; color: #9ca3af; margin-bottom: 20px; }}
-        .status-box {{ background: #030712; padding: 12px 16px; border-radius: 8px; border: 1px solid #374151; margin-bottom: 20px; font-size: 0.85rem; }}
-        .status-item {{ display: flex; justify-content: space-between; margin-bottom: 4px; }}
-        .status-item:last-child {{ margin-bottom: 0; }}
-        .status-label {{ color: #94a3b8; }}
-        .status-val {{ color: #4ade80; font-family: monospace; }}
-        .form-group {{ margin-bottom: 16px; }}
-        label {{ display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: #e2e8f0; letter-spacing: 0.025em; }}
-        input[type="text"] {{ width: 100%; padding: 12px 14px; background: #1f2937; border: 1px solid #374151; border-radius: 8px; color: #fff; font-size: 0.95rem; outline: none; transition: 0.2s; }}
-        input[type="text"]:focus {{ border-color: #38bdf8; }}
-        button {{ width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: 0.2s; margin-top: 8px; }}
-        button:hover {{ background: #0369a1; }}
-        .result-box {{ margin-top: 20px; padding: 14px; background: #030712; border-radius: 8px; border: 1px dashed #38bdf8; display: none; }}
-        .result-title {{ font-size: 0.75rem; text-transform: uppercase; color: #38bdf8; font-weight: 700; margin-bottom: 4px; }}
-        .msg-box {{ font-size: 0.9rem; color: #4ade80; }}
+        * {{
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+        }}
+        body {{
+            background: radial-gradient(circle at 50% 0%, #172554 0%, #030712 70%);
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }}
+        .container {{
+            width: 100%;
+            max-width: 540px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(56, 189, 248, 0.1);
+        }}
+        .header {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }}
+        .header-title h1 {{
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }}
+        .header-title h1 span {{
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }}
+        .header-title p {{
+            font-size: 0.82rem;
+            color: #94a3b8;
+            margin-top: 2px;
+        }}
+        .badge {{
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }}
+        .badge-active {{
+            background: rgba(34, 197, 94, 0.12);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }}
+        .badge-inactive {{
+            background: rgba(239, 68, 68, 0.12);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }}
+        .dot {{
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 8px currentColor;
+        }}
+        .status-card {{
+            background: rgba(2, 6, 23, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }}
+        .status-row {{
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 12px;
+        }}
+        .status-row:last-child {{
+            margin-bottom: 0;
+        }}
+        .status-label {{
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 700;
+        }}
+        .status-val {{
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            word-break: break-all;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }}
+        .form-group {{
+            margin-bottom: 18px;
+        }}
+        label {{
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }}
+        input[type="text"] {{
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(2, 6, 23, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.9rem;
+            font-family: "JetBrains Mono", monospace;
+            outline: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }}
+        input[type="text"]:focus {{
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+            background: rgba(2, 6, 23, 0.95);
+        }}
+        .btn-group {{
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }}
+        button {{
+            flex: 1;
+            padding: 13px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }}
+        .btn-primary {{
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+        }}
+        .btn-primary:hover {{
+            background: linear-gradient(135deg, #0369a1, #1d4ed8);
+            transform: translateY(-1px);
+        }}
+        .btn-secondary {{
+            background: rgba(255, 255, 255, 0.05);
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            flex: 0 0 100px;
+        }}
+        .btn-secondary:hover {{
+            background: rgba(255, 255, 255, 0.08);
+            color: #f8fafc;
+        }}
+        .notification {{
+            margin-top: 18px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            font-size: 0.82rem;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            animation: fadeIn 0.3s ease;
+        }}
+        @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(4px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>MajorLogin Override Control</h1>
-        <p class="subtitle">Atur OpenID dan Access Token yang otomatis diterapkan ke /MajorLogin.</p>
-        
-        <div class="status-box">
-            <div class="status-item">
-                <span class="status-label">Active OpenID:</span>
-                <span class="status-val" id="statOid">{current_oid}</span>
+    <div class="container">
+        <div class="header">
+            <div class="header-title">
+                <h1><span>MajorLogin</span> Control</h1>
+                <p>Interceptor & Payload Override Center</p>
             </div>
-            <div class="status-item">
-                <span class="status-label">Active Token:</span>
-                <span class="status-val" id="statTok">{current_tok}</span>
+            <div id="statusBadge" class="badge {'badge-active' if is_active else 'badge-inactive'}">
+                <span class="dot"></span>
+                <span id="badgeText">{'Active' if is_active else 'Standby'}</span>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <div class="status-row">
+                <span class="status-label">Active OpenID (Field 22)</span>
+                <div class="status-val" id="statOid">{current_oid}</div>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Active Access Token (Field 29)</span>
+                <div class="status-val" id="statTok">{current_tok}</div>
             </div>
         </div>
 
         <form id="cfgForm">
             <div class="form-group">
-                <label for="open_id">OPEN ID (Field 22)</label>
-                <input type="text" id="open_id" name="open_id" placeholder="Masukkan OpenID target" required>
+                <label for="open_id">Open ID (Field 22)</label>
+                <input type="text" id="open_id" name="open_id" placeholder="Contoh: 1234567890" autocomplete="off" required>
             </div>
             
             <div class="form-group">
-                <label for="access_token">ACCESS TOKEN (Field 29)</label>
-                <input type="text" id="access_token" name="access_token" placeholder="Masukkan Access Token" required>
+                <label for="access_token">Access Token (Field 29)</label>
+                <input type="text" id="access_token" name="access_token" placeholder="Tempel token target di sini" autocomplete="off" required>
             </div>
 
-            <button type="submit" id="submitBtn">Save Configuration</button>
+            <div class="btn-group">
+                <button type="button" class="btn-secondary" id="resetBtn">Reset</button>
+                <button type="submit" class="btn-primary" id="submitBtn">Apply Override</button>
+            </div>
         </form>
 
-        <div class="result-box" id="resultBox">
-            <div class="result-title">Status</div>
-            <div class="msg-box" id="resultMsg"></div>
+        <div class="notification" id="notifBox">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span id="notifText">Configuration updated successfully!</span>
         </div>
     </div>
 
     <script>
-        document.getElementById('cfgForm').addEventListener('submit', async (e) => {{
+        const form = document.getElementById('cfgForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const notifBox = document.getElementById('notifBox');
+        const notifText = document.getElementById('notifText');
+        const badge = document.getElementById('statusBadge');
+        const badgeText = document.getElementById('badgeText');
+        const statOid = document.getElementById('statOid');
+        const statTok = document.getElementById('statTok');
+
+        function showNotification(msg) {{
+            notifText.innerText = msg;
+            notifBox.style.display = 'flex';
+            setTimeout(() => {{
+                notifBox.style.display = 'none';
+            }}, 4000);
+        }}
+
+        form.addEventListener('submit', async (e) => {{
             e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true;
-            btn.innerText = "Saving...";
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Applying...";
 
             const oid = document.getElementById('open_id').value.trim();
             const tok = document.getElementById('access_token').value.trim();
@@ -186,16 +387,39 @@ async def dashboard_view():
                 }});
                 const data = await res.json();
                 if(data.status === 'success') {{
-                    document.getElementById('statOid').innerText = oid;
-                    document.getElementById('statTok').innerText = tok.length > 15 ? tok.substring(0, 15) + "..." : tok;
-                    document.getElementById('resultMsg').innerText = "Konfigurasi aktif berhasil diupdate! Request /MajorLogin sekarang otomatis memakai akun ini.";
-                    document.getElementById('resultBox').style.display = 'block';
+                    statOid.innerText = oid;
+                    statTok.innerText = tok;
+                    badge.className = 'badge badge-active';
+                    badgeText.innerText = 'Active';
+                    showNotification('Override berhasil aktif untuk /MajorLogin!');
+                    form.reset();
                 }}
             }} catch (err) {{
-                console.error(err);
+                showNotification('Gagal mengupdate konfigurasi!');
             }} finally {{
-                btn.disabled = false;
-                btn.innerText = "Save Configuration";
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Apply Override";
+            }}
+        }});
+
+        resetBtn.addEventListener('click', async () => {{
+            const formData = new FormData();
+            formData.append('open_id', '');
+            formData.append('access_token', '');
+            
+            try {{
+                await fetch('/api/set-config', {{
+                    method: 'POST',
+                    body: formData
+                }});
+                statOid.innerText = 'None';
+                statTok.innerText = 'None';
+                badge.className = 'badge badge-inactive';
+                badgeText.innerText = 'Standby';
+                showNotification('Konfigurasi berhasil direset (Forward Normal).');
+                form.reset();
+            }} catch (err) {{
+                showNotification('Gagal mereset konfigurasi!');
             }}
         }});
     </script>
@@ -206,10 +430,10 @@ async def dashboard_view():
 
 
 @app.post("/api/set-config")
-async def set_config(open_id: str = Form(...), access_token: str = Form(...)):
-    ACTIVE_CONFIG["open_id"] = open_id.strip()
-    ACTIVE_CONFIG["access_token"] = access_token.strip()
-    return {"status": "success", "open_id": open_id}
+async def set_config(open_id: str = Form(""), access_token: str = Form("")):
+    ACTIVE_CONFIG["open_id"] = open_id.strip() if open_id.strip() else None
+    ACTIVE_CONFIG["access_token"] = access_token.strip() if access_token.strip() else None
+    return {"status": "success", "open_id": ACTIVE_CONFIG["open_id"]}
 
 
 @app.post("/MajorLogin")
